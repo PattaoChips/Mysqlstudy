@@ -162,7 +162,7 @@ select count(*) as num_cnt from user_profile; =>4
 select count(age) as num_cnt from user_profile; =>3
 ```
 
-![1666546020164](D:\learning\mysql\1666546020164.png)
+![1666546020164](D:\learning\mysql\material\1666546020164.png)
 
 ## 计算函数-Max()
 
@@ -192,17 +192,260 @@ select sum(age) as sum_age from user_profile;
 select round(avg(age),1) as avg_age from user_profile;
 ```
 
-## 分组
+## 分组计算
 
 ```mysql
-select gender,university,count(id) user_num,avg(active_days_within_30) avg_avtive_day,avg(question_cnt) avg_auestion_cnt from user_profile group by gender,university
+select university,avg(gpa) as avg_gpa from user_profile group by university
+示范的SELECT 语句指定了两个列：university为用户的学校， avg(gpa)为计算字段，代表平均gpa。 GROUP BY 子句指示SQL按university分组分别计算每个学校的平均gpa情况，从输出中可以看到，结果返回了每个大学的平均gpa数值。
 ```
 
 ## 分组过滤(having 关键字) where 从记录中法过滤出某一条记录  having 可以从一组组记录中过滤掉其哪几组
-select university,round(avg(question_cnt),3) as avg_question_cnt,round(avg(answer_cnt),3) as avg_answer_cnt
-from user_profile group by university having avg_question_cnt < 5 or avg_answer_cnt < 20
+```mysql
+select university,round(avg(question_cnt),3) as avg_question_cnt,round(avg(answer_cnt),3) as avg_answer_cnt from user_profile group by university having avg_question_cnt < 5 or avg_answer_cnt < 20
+```
+
+## 分组排序
+
+```mysql
+如果想让分组查询的结果按照某个特殊的字段进行升序或降序排列，那么应该怎么做呢？分组查询结果也支持排序功能，所需要用到的语句是Order By
+select university,avg(active_days_within_30) as avg_active_days from user_profile group by university order bY avg_active_days
+```
+
+
 
 ## 多表查询 => 子查询
 
-子查询：即 嵌套在其他查询中的查询
+```mysql
+子查询：即嵌套在其他查询中的查询
+题库练习明细表：question_practice_detail
+question_practice表中存储了每个用户在在线题库中进行题目练习的明细情况，每个
+用户每次做的每道练习会在表中生成一行记录，表形式如下：
+```
+
+![1666602438359](D:\learning\mysql\material\1666602438359.png)
+
+```mysql
+查看来自山东大学的学生每天的题库练习情况， 应该怎么做呢？
+select device_id,question_id,result from question_practice_detail where device_id in (select device_id from user_profile where university ='山东大学');
+在 SELECT 语句中，子查询总是从内向外处理。在处理上面的 SELECT 语 句时，DBMS实际上执行了两个操作。
+首先，它执行下面的查询：
+select device_id from user_active WHERE university ='山东大学'
+这个查询可以返回所有的山东大学用户的device_id， 然后，这些值以IN 操作符要求的逗号分隔的格式传递给外部查询的 WHERE 子句外部查询变成：
+select cust_id from orders where order_num in (5432，,2131) ，
+通过这样的方式，就可以得到我们想要的结果，返回所有山东大学。
+```
+
+## 连接查询
+
+SQL 最强大的功能之一就是能在数据查询的执行中联结（join）表。联结是利用 SQL 的SELECT 能执行的最重要的操作，很好地理解联结及其语法是学习 SQL 的极为重要的部分。关系表的设计就是要把信息分解成多个表，一类数据一个表。各表通过某些共同的值互相关联（所以才叫关系数据库）。在实际开发中，大部分的情况下都不是从单表中查询数据，一般都是多张表[联合查询](https://so.csdn.net/so/search?q=联合查询&spm=1001.2101.3001.7020)取出最终的结果。一个业务都会对应多张表，比如：学生和班级，起码两张表。(避免产生数据的冗余)。
+
+![1666622556947](D:\learning\mysql\material\1666622556947.png)
+
+### 内连接和外连接的区别
+
+1、内连接：
+    假设A和B表进行连接，使用内连接的话，凡是A表和B表能够匹配上的记录查询出来，这就是内连接。AB两张表没有主副之分，两张表是平等的。
+
+2、外连接：
+    假设A和B表进行连接，使用外连接的话， AB两张表中有一张表是主表，一张表是副表，主要查询主表中的数据，捎带着查询副表。当副表中的数据没有和主表中的数据匹配上，副表自动模拟出NULL与之匹配。
+
+### 连接查询的分类
+
+1、根据语法出现的年代来划分：
+
+ sql97--仅仅支持内连接(一些老的DBA可能还在使用这种语法。)
+ sql99--推荐使用,支持左外+右外(左外+右外)+交叉
+
+2、根据功能划分分类:
+
+交叉连接：笛卡尔积。()
+内连接：等值连接、非等值连接、自连接。（还可分为隐式【无join】和显式【有join】）
+外连接：左外连接(左连接)、右外连接(右连接)、全连接。
+
+### 七种常用连接查询详解
+
+#### 1、笛卡尔积： 
+
+笛卡尔积也称交叉连接，交叉连接是内连接的一种。
+
+假设集合A={a,b}，集合B={0,1,2}，则两个集合的笛卡尔积为{(a,0),(a,1),(a,2),(b,0),(b,1), (b,2)}。如果A表示某学校学生的集合，B表示该学校所有教师的集合，则A与B的笛卡尔积表示学生选择老师所有可能的情况。
+
+笛卡尔积特点：它不使用任何匹配或者选取条件，而是直接将一个数据源中的每个行与另一个数据源的每个行 一 一 匹配。
+
+      重点记：
+      笛卡尔积：用的比较少，因为存在重复数据
+      笛卡尔积：一个表的每条数据都和另一个表的所有数据匹配一次
+      结       果： 一表 9 条 乘以 另一表 6 条 = 54 条
+案例：
+
+```mysql
+查询学生对应的老师
+select * from student ,teacher；
+学生表 中数据每 1 个学生都和 教师表 中的 所有教师 都匹配一次。
+问题：
+	当两张表进行连接查询的时候，没有任何条件进行限制，最终的查询结果条数是两张表记录条数的乘积。这就是笛卡尔积现象。 查询出来的结果是两张表的记录的乘积 9*6=54，许多数据是无效数据。如何避免笛卡尔积现象？
+解决方案： 增加加条件进行过滤，但只会显示有效记录。此时也是隐式（无join）内连接。
+
+```
+
+![1666623182281](D:\learning\mysql\material\1666623182281.png)
+
+```mysql
+根据教师id查询学生对应的选课老师
+select st.*,th.* from student st ,teacher th where st.teacher_id = th.id;
+```
+
+![1666623507552](D:\learning\mysql\material\1666623507552.png)
+
+#### 2、内连接
+
+ 内连接，取的就是两张表的交集。
+
+![1666623563409](D:\learning\mysql\material\1666623563409.png)
+
+##### 2.1隐式与显式连接
+
+**隐式（无join）连接语法**：select 字段 from 表A, 表B where 消除笛卡尔积的连接条件
+
+```mysql
+案例：根据教师id查询学生对应的选课老师
+select st.*,th.* from student st ,teacher th where st.teacher_id = th.id;
+```
+
+![1666623748802](D:\learning\mysql\material\1666623748802.png)
+
+**显式（有join）连接语法**：select 字段* from 表A 别名 INNER(可以省略) JOIN 表B 别名 ON 消除笛卡尔积的连接条件
+
+```mysql
+案例：根据教师id查询学生对应的选课老师
+select st.*,th.* from student st inner join teacher th on st.teacher_id = th.id;
+select st.*,th.* from student st join teacher th on st.teacher_id = th.id;（inner 可以省略）
+```
+
+![1666623855543](D:\learning\mysql\material\1666623855543.png)
+
+##### 2.2等值连接
+
+等值连接的最大的特点就是：条件是等量关系，SQL99(最常用)。
+
+**等值连接语法**
+select 字段* from 表1  **INNER(可以省略) JOIN** 表2  **ON** 消除笛卡尔积的连接条件A=B
+
+```mysql
+案例：根据教师id查询学生对应的选课老师
+select st.*,th.* from student st join teacher th on st.teacher_id = th.id;
+```
+
+![1666623993494](D:\learning\mysql\material\1666623993494.png)
+
+##### 2.3非等值连接
+
+非等值连接的最大的特点就是：条件不是是等量关系，SQL99(最常用)。
+
+ **非等值连接语法**
+ select 字段* from 表1  **INNER(可以省略) JOIN** 表2  **ON** 消除笛卡尔积的连接条件
+
+```mysql
+案例：查询教师id在4-6之间所教的学生和老师信息
+select st.*,th.* from student st join teacher th on st.teacher_id = th.id and th.id between 4 and 6;
+```
+
+![1666624086733](D:\learning\mysql\material\1666624086733.png)
+
+#####  2.4自连接
+
+自连接的最大的特点：就是一张表看做两张表，自己连接自己
+
+实质就是等值连接，只不过是连接表本身。
+
+```mysql
+ 案例：查询学生id和教师id相同的学生
+select s.*,st.teacher_id from student s,student st where s.id = st.teacher_id;
+```
+
+#### 3、外连接
+
+外连接又分为左外连接、右外连接、全连接
+
+```mysql
+左外连接（LEFT OUTER JOIN），简称左连接（LEFT JOIN）
+右外连接（RIGHT OUTER JOIN），简称右连接（RIGHT JOIN）
+全外连接（FULL OUTER JOIN），简称全连接（FULL JOIN）
+```
+##### 3.1左外连接：
+
+左外连接：left join 或 left outrer join  （outer可以省略）
+
+左外连接：左边的是主表，左表数据全部显示，右表显示符合ON后的条件的数据，不符合的用NULL代替。
+
+![1666624586278](D:\learning\mysql\material\1666624586278.png)
+
+```mysql
+select * from student st left join teacher th on st.teacher_id = th.id;（outer可以省略）
+```
+
+![1666624666400](D:\learning\mysql\material\1666624666400.png)
+
+![1666624742551](D:\learning\mysql\material\1666624742551.png)
+
+```mysql
+案例：查询没有教师的学生信息
+select * from student st left join teacher th on st.teacher_id = th.id where th.id is null;
+```
+
+![1666624779654](D:\learning\mysql\material\1666624779654.png)
+
+#####  3.2右外连接：
+
+ 右外连接：right join 或 right outrer join  （outer可以省略）
+
+ 右外连接：右边边的是主表，右边表数据全部显示，左边表显示符合ON后的条件的数据，不符合的用NULL代替。
+
+![1666624824181](D:\learning\mysql\material\1666624824181.png)
+
+```mysql
+select * from student st right join teacher th on st.teacher_id = th.id;（outer可以省略）
+```
+
+![1666624876046](D:\learning\mysql\material\1666624876046.png)
+
+![1666624891822](D:\learning\mysql\material\1666624891822.png)
+
+```mysql
+案例：查询没有学生的教师信息
+select * from student st right join teacher th on st.teacher_id = th.id where st.teacher_id is null;
+```
+
+![1666624929446](D:\learning\mysql\material\1666624929446.png)
+
+##### 3.3全外连接
+
+全外连接：full join 或 full outer join（outer可以省略），但Mysql不支持，可以使用union组合并去重实现。 
+
+简单理解：**全外接查询**：就是 **左表独有的数据** 加上 **右表独有的数据**
+
+![1666625028325](D:\learning\mysql\material\1666625028325.png)
+
+```mysql
+select * from student st left join teacher th on st.teacher_id = th.id where th.id is null
+union 
+select * from student st right join teacher th on st.teacher_id = th.id where st.teacher_id is null
+```
+
+![1666625082448](D:\learning\mysql\material\1666625082448.png)
+
+##### 3.4全连接
+
+全连接：full join 或 full outer join（outer可以省略），但Mysql不支持，可以使用union组合并去重实现。
+
+简单理解：**全连接查询**的是 左表所有的数据  加上 右表所有的数据 并去重。
+
+![1666625153526](D:\learning\mysql\material\1666625153526.png)
+
+```mysql
+select * from student st left join teacher th on st.teacher_id = th.id union 
+select * from student st right join teacher th on st.teacher_id = th.id
+```
+
+![1666625200174](D:\learning\mysql\material\1666625200174.png)
 
