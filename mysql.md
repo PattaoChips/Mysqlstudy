@@ -449,3 +449,43 @@ select * from student st right join teacher th on st.teacher_id = th.id
 
 ![1666625200174](D:\learning\mysql\material\1666625200174.png)
 
+## IF 条件函数
+
+```mysql
+IF函数是最常用到的条件函数，在Excel中也有if函数，想必大部分同学对其都比较熟悉，其写法为 if(x=n,a,b)，x=n代表判断条件，如果x=n时，那么结果返回a，否则返回b
+select device_id,if(university = '北京大学','北京大学','其他大学'）as university from user_profile
+```
+
+![1666799193000](D:\learning\mysql\material\1666799193000.png)
+
+## Case when
+
+```mysql
+case when与if的作用基本相同，也是按照条件更换列中的内容，区别是case when可以 对多个条件进行转换
+select case when SCORE = 'A' then '优' when SCORE = 'B' then '良'
+when SCORE = 'C' then '中' else '不及格'
+END --注意这里需要加end作为结束
+```
+
+## 日期函数
+
+在DBMS中日期和时间值以特殊的格式存储，以便能快速和有效地排序或过滤。常见的日期数据格式有两种：'yyyy-MM-dd' 和 'yyyyMMdd'
+
+### **时间戳-日期格式转化**
+
+时间戳是数据库中自动生成的唯一二进制数字，表明数据库中数据修改发生的相对顺序，其记录形式类似：1627963699 ，在实际工作环境中，对于用户行为发生的时间通常都是用时间戳进行记录，**时间戳和日期格式之间可以利用from_unixtime和 unix_timestamp进行转换。**
+
+![1666799428586](D:\learning\mysql\material\1666799428586.png)
+
+```mysql
+from_unixtime可以将时间戳转换成日期，其使用语法和输出如下所示：
+select from_unixtime(time,'yyyy-MM-dd') as time from question_practice_detail
+得出
+Time
+2021-08-03
+2021-08-03
+2021-08-03
+unix_timestamp可以将日期转换回时间戳，其使用语法和输出如下所示：
+select from_unixtime('2021-08-01','yyyy-MM-dd') as time
+```
+
